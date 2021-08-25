@@ -1,5 +1,6 @@
 package com.auth0.hotsauces.security
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -8,6 +9,11 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
 import org.springframework.security.oauth2.core.OAuth2TokenValidator
 import org.springframework.security.oauth2.jwt.*
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider
+import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationFilter
+import org.springframework.security.web.access.AccessDeniedHandler
+import org.springframework.security.web.authentication.AuthenticationFailureHandler
+import org.springframework.stereotype.Component
 
 
 @EnableWebSecurity
@@ -37,6 +43,28 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
             .mvcMatchers("/api/hotsauces").authenticated()
             .mvcMatchers("/api/hotsauces/*").authenticated()
             .and()
-            .oauth2ResourceServer().jwt()
+            .addFilter(bearerTokenAuthenticationFilter())
+            .exceptionHandling()
+            .accessDeniedHandler(accessDeniedHandler())
+            .and()
+            .oauth2ResourceServer()
+            .jwt()
     }
+
+    fun bearerTokenAuthenticationFilter(): BearerTokenAuthenticationFilter {
+        val filter = BearerTokenAuthenticationFilter(authenticationManagerBean())
+        filter.setAuthenticationFailureHandler(authenticationFailureHandler())
+        return filter
+    }
+
+    @Bean
+    fun authenticationFailureHandler() : AuthenticationFailureHandler {
+        return CustomAuthenticationFailureHandler()
+    }
+
+    @Bean
+    fun accessDeniedHandler(): AccessDeniedHandler? {
+        return CustomAccessDeniedHandler()
+    }
+
 }
